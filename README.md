@@ -1,260 +1,254 @@
-# BBS+ Threshold Signature Implementation
+# BBS Signatures used in verifiable credentials and their variants
 
-一个基于椭圆曲线密码学的BBS+阈值签名算法实现，支持基础签名、阈值签名和盲签名功能。
+## Project Video Demo：
 
-## 📋 功能特性
+https://youtu.be/vm_nvwcjvN0
 
-- **基础BBS+签名**: 支持向量消息的数字签名
-- **阈值签名**: 分布式签名，需要t个参与方协作生成有效签名  
-- **盲签名**: 弱部分盲签名，保护消息隐私
-- **网络通信**: 基于TCP/IP的客户端-服务器架构
-- **椭圆曲线**: 使用BLS12-381曲线和双线性配对
-- **性能测试**: 内置基准测试工具
+## Project Video Introduction：
 
-## 🗂️ 项目结构
+https://youtu.be/fGHyY1-nruA
 
+## Project Overview
+
+This project implements the BBS+ signature scheme and extends it with Threshold Signature and Weak Partially-Blind Signature functionalities. BBS+ signatures are widely used in Verifiable Credentials (VCs) and Decentralized Identity (DID) due to their ability to sign message vectors and support efficient zero-knowledge proofs.
+
+Traditional digital signature schemes suffer from single points of failure and privacy leakage risks. This project's threshold signature mechanism enhances system security and fault tolerance by distributing signing authority across multiple servers using Shamir Secret Sharing. Concurrently, the weak partially-blind signature allows users to obtain signatures without revealing all information to the signers, thereby protecting user privacy during credential issuance.
+
+## Features
+
+*   **BBS+ Core Signature:** Implements the Gen, Sign, and Verify algorithms for BBS+ signatures.
+*   **Threshold BBS+ Signature:**
+    *   Implements distributed key generation based on Shamir Secret Sharing.
+    *   Supports (t, n) threshold configuration, requiring at least `t` servers to cooperate for a valid signature.
+    *   Ensures fairness and security in multi-party computation through a commit-reveal mechanism.
+*   **Weak Partially-Blind Signature:**
+    *   Allows clients to obtain signatures without revealing partial message content to the signers.
+    *   Supports separation of public information (`public_info`) and private information (`private_info`) within messages.
+*   **BLS12-381 Elliptic Curve:** Underlying cryptographic operations are based on the BLS12-381 curve, providing 128-bit security strength.
+*   **Performance Benchmarking:** Includes detailed performance testing scripts to evaluate the efficiency of curve operations, key generation, threshold signing, and verification.
+*   **Modular Design:** Clear code structure with independent and reusable functional modules (e.g., curve operations, commitment, threshold protocol).
+
+## Project Structure
 ```
 new_bbs_plus/
-├── bbs/                    # 核心算法实现
-│   ├── bbs_plus.py        # BBS+签名算法
-│   ├── threshold.py       # 阈值签名和盲签名
-│   ├── curve.py           # 椭圆曲线运算
-│   └── commitment.py      # 承诺机制
-├── test/                   # 测试和示例
-│   ├── server.py          # 阈值签名服务器
-│   └── client.py          # 测试客户端
-├── benchmark/              # 性能测试
-│   └── benchmark.py       # 基准测试工具
-└── README.md              # 项目文档
+├── benchmark/
+│ └── benchmark.py # erformance benchmarking script
+├── bbs/
+│ ├── bbs_plus.py # Core BBS+ signature algorithm implementation
+│ ├── commitment.py # Commitment mechanism (FCom) implementation
+│ ├── curve.py # Elliptic curve operations (BLS12-381) implementation
+│ └── threshold.py # Threshold BBS+ and Weak Partially-Blind Signature protocol implementation
+├── test/
+│ ├── client.py # Client simulation, interacts with servers
+│ └── server.py # Server simulation, participates in threshold signing
+└── README.md # Project README file
 ```
+## Installation
 
-## 🔧 安装要求
-
-### 依赖库
+1.  **Clone the repository:**
 
 ```bash
-pip install py_ecc
+    git clone <repository_url>
+    cd new_bbs_plus
 ```
 
-### Python版本
-- Python 3.7+
-
-## 🚀 快速开始
-
-### 1. 基础测试
-
-运行本地测试验证所有功能：
+2.  **Install Python dependencies:**
 
 ```bash
-cd new_bbs_plus
-python test/simple_local_test.py
+    pip install py_ecc
 ```
 
-### 2. 阈值签名网络测试
+## Usage
 
-启动4个服务器实例：
+This section details how to use the functionalities provided by this project. You can choose to directly call the Python API for programmatic use, or run the distributed system examples to experience the interaction between clients and servers.
 
-```bash
-# 终端1
-python test/server.py --id 1 --port 8001
+### 1. Programmatic Usage (Python API)
 
-# 终端2  
-python test/server.py --id 2 --port 8002
+This section demonstrates how to directly interact with the core cryptographic modules provided by this project.
 
-# 终端3
-python test/server.py --id 3 --port 8003
+#### 1.1. Basic BBS+ Signatures
 
-# 终端4
-python test/server.py --id 4 --port 8004
+The BBSPlus class provides the fundamental BBS+ signature generation and verification functionalities.
+
+```PYTHON
+from bbs.bbs_plus import BBSPlus
+from bbs.curve import BilinearGroup 
+
+# 1. Initialize BBSPlus
+bbs = BBSPlus()
+
+
+# 2. Generate Keys
+# message_count specifies the maximum number of messages that can be signed.
+message_count = 3
+secret_key, public_key = bbs.gen(message_count)
+
+print("BBS+ Keys Generated:")
+# public_key['H'] is a list of G1 points, public_key['X'] is a G2 point.
+# For display, you might want to serialize them:
+# group = BilinearGroup()
+# print(f"Public Key X: {group.serialize_g2_point(public_key['X'])}")
+# print(f"Public Key H[0]: {group.serialize_g1_point(public_key['H'][0])}")
+
+# 3. Sign Messages
+messages = [123, 456, 789]
+# Messages must be integers
+signature = bbs.sign(secret_key, messages, public_key)
+
+print("\nBBS+ Signature Generated:")
+# signature['A'] is a G1 point, signature['e'] and signature['s'] are scalars.
+# print(f"Signature A: {group.serialize_g1_point(signature['A'])}")
+# print(f"Signature e: {signature['e']}")
+# print(f"Signature s: {signature['s']}")
+
+# 4. Verify Signature
+is_valid = bbs.verify(public_key, messages, signature)
+print(f"\nBBS+ Signature Valid: {is_valid}")
 ```
 
-运行客户端测试：
+#### 1.2. Threshold BBS+ Signatures
 
-```bash
-# 终端5
-python test/client.py
+The FormalThresholdBBSPlus class implements the multi-party threshold signature protocol. For simplified programmatic usage in a single-process simulation or testing environment, the formal_threshold_sign method encapsulates the entire client-server interaction.
+
+Note: In a real-world distributed system, the client and server roles would be separated, communicating over a network. The test/client.py and test/server.py scripts provide a concrete example of this distributed setup.
+
+```PYTHON
+from bbs.threshold import FormalThresholdBBSPlus
+from bbs.bbs_plus import BBSPlus
+from bbs.curve import BilinearGroup
+
+# --- Configuration ---
+n_servers = 4  
+# Total number of servers
+t_threshold = 3 
+# Minimum number of servers required to sign
+message_count = 2 
+# Number of messages to be signed
+messages_to_sign = [100, 200]
+
+# Simulate selected parties (e.g., the first 't' servers)
+selected_parties_ids = list(range(1, t_threshold + 1))
+
+# --- 1. System Setup (Typically done once by a trusted party) ---
+# FormalThresholdBBSPlus will generate the global public key and distributed key shares.
+# In a real system, each server would receive its share securely.
+threshold_bbs_system = FormalThresholdBBSPlus(n_servers, t_threshold)
+setup_data = threshold_bbs_system.setup(message_count)
+global_public_key = setup_data['public_key']
+
+print("Threshold BBS+ System Setup Complete.")
+# print(f"Global Public Key X: {BilinearGroup().serialize_g2_point(global_public_key['X'])}")
+
+# --- 2. Perform Threshold Signing (using the high-level wrapper) ---
+# The `formal_threshold_sign` method simulates the entire multi-party protocol
+# within a single call, assuming the orchestrator has access to all party data.
+client_id = "example_client"
+final_threshold_signature = threshold_bbs_system.formal_threshold_sign(
+    client_id, messages_to_sign, selected_parties_ids
+)
+
+print("\nFinal Threshold Signature Generated:")
+# print(f"Signature A: {BilinearGroup().serialize_g1_point(final_threshold_signature['A'])}")
+# print(f"Signature e: {final_threshold_signature['e']}")
+# print(f"Signature s: {final_threshold_signature['s']}")
+
+# --- 3. Verify the Final Signature (using basic BBSPlus) ---
+bbs_verifier = BBSPlus()
+is_valid_threshold_sig = bbs_verifier.verify(global_public_key, messages_to_sign, final_threshold_signature)
+print(f"\nFinal Threshold Signature Valid: {is_valid_threshold_sig}")
+
+# --- Weak Partially-Blind Threshold Signing Example ---
+# This also uses the `formal_threshold_sign` method with additional parameters.
+# `public_info` and `private_info` are parts of the `messages_to_sign`.
+# For example, if messages_to_sign = [100, 200], public_info = [100], private_info = [200]
+public_info = [messages_to_sign[0]]
+private_info = [messages_to_sign[1]]
+
+# Alpha and Beta are blinding factors, typically generated by the client.
+# In the `formal_threshold_sign` wrapper, these are passed through.
+# The protocol internally sums up individual party's alpha_i and beta_i.
+alpha_blinding = 12345
+# Example client-side blinding factor
+beta_blinding = 67890
+# Example client-side blinding factor
+
+print("\n--- Initiating Weak Partially-Blind Threshold Signing ---")
+blind_signature = threshold_bbs_system.formal_threshold_sign(
+    client_id,
+    messages_to_sign,
+    selected_parties_ids,
+    public_info=public_info,
+    private_info=private_info,
+    alpha=alpha_blinding,
+    beta=beta_blinding
+)
+
+print("\nWeak Partially-Blind Signature Generated:")
+# print(f"Blind Signature A: {BilinearGroup().serialize_g1_point(blind_signature['A'])}")
+# print(f"Blind Signature e: {blind_signature['e']}")
+# print(f"Blind Signature s: {blind_signature['s']}")
+# Verify the blind signature (verification is the same as regular BBS+)
+is_valid_blind_sig = bbs_verifier.verify(global_public_key, messages_to_sign, blind_signature)
+print(f"\nWeak Partially-Blind Signature Valid: {is_valid_blind_sig}")
 ```
 
-### 3. 性能基准测试
+### 2. Running Servers
+
+You need to start multiple server instances to simulate the threshold signature environment. Each server should run on a different port.
+
+**Example (4 servers, threshold 3):**
+
+Open 4 separate terminal windows and run:
 
 ```bash
+# Terminal 1 for Server 1
+python server.py --id 1 --n 4 --t 3 --port 8001
+
+# Terminal 2 for Server 2
+python server.py --id 2 --n 4 --t 3 --port 8002
+
+# Terminal 3 for Server 3
+python server.py --id 3 --n 4 --t 3 --port 8003
+
+# Terminal 4 for Server 4
+python server.py --id 4 --n 4 --t 3 --port 8004
+```
+
+### 3. Running Client
+
+Run the client script in another terminal window. The client will automatically perform system initialization, standard threshold signing, verification, weak partially-blind signing, and verification processes.
+
+```bash
+# Terminal 5 for Client
+python client.py
+```
+
+The client's output will show the progress and results of each step, including the success or failure of signature generation and verification.
+
+### 4. Running Performance Benchmarks
+
+To evaluate the algorithm's performance, you can run the benchmarking script.
+
+```BASH
 python benchmark/benchmark.py
 ```
 
-## 📊 测试流程
+This script will test the average time for curve operations, key generation, threshold signing, and verification, and output a detailed performance report.
 
-客户端会依次测试以下功能：
+## Technical Details
 
-1. **系统初始化**: 设置公钥和密钥分享
-2. **基础阈值签名**: 生成和验证阈值签名
-3. **简化盲签名**: 测试基本盲签名流程
-4. **正式盲签名**: 使用完整的论文协议
-5. **签名验证**: 验证所有生成的签名
+- Elliptic Curve: Uses the py_ecc library to implement G1 and G2 group operations and bilinear pairings on the BLS12-381 curve.
+- Shamir Secret Sharing: Used to split the master secret key x into n shares and supports reconstruction from t shares.
+- Commitment Mechanism (FCom): Implements a collision-resistant commit-reveal protocol to ensure the integrity and consistency of random numbers in multi-party computation.
+- Zero Share Function (FZero): Used to securely generate random shares that sum to zero, preventing bias attacks.
+- Two-Party Multiplication Function (FMul2P): Provides a secure two-party multiplication protocol, supporting complex multi-party computations.
 
-### 预期输出
+## Contributions
 
-```
-BBS+ Threshold Signature Test
-Ports: [8001, 8002, 8003, 8004], Threshold: 3, Messages: [111, 222, 333]
-
---- Init ---
-Setup server 8001
-Got public key from 8001
-Server 8001 OK
-...
-System ready (4/4)
-
---- Sign ---
-Signing: [111, 222, 333]
-Getting partial sig from 8001
-Got partial from 8001
-...
-Signature ready
-
---- Verify ---
-Verifying...
-Verify: PASS
-
---- Blind Signature Test ---
-Testing blind signature...
-Blind signature generated
-Blind signature verify: PASS
-
---- Formal Blind Signature Test ---
-Testing FORMAL blind signature...
-Formal blind signature generated
-Formal blind signature verify: PASS
-
---- Result ---
-SUCCESS: Threshold signature works!
-SUCCESS: Blind signature also works!
-SUCCESS: Formal blind signature works!
-```
-
-## 🔬 技术细节
-
-### 算法参数
-
-- **椭圆曲线**: BLS12-381
-- **参与方数量**: n = 4
-- **阈值**: t = 3  
-- **消息长度**: 支持任意长度的向量消息
-
-### 密钥分享
-
-使用Shamir秘密分享方案：
-- 秘密密钥分割为n份
-- 任意t份可重构原始密钥
-- 拉格朗日插值重构
-
-### 盲签名机制
-
-支持弱部分盲签名：
-- **公开信息**: 签名方可见
-- **私有信息**: 经过盲化保护
-- **盲化参数**: `blinding_nonce_e`, `blinding_nonce_s`
-
-### 网络协议
-
-基于JSON的简单协议：
-
-```json
-// 系统初始化
-{"type": "setup", "message_length": 3, "threshold": 3}
-
-// 阈值签名
-{"type": "sign", "messages": [111, 222, 333], "threshold": 3}
-
-// 签名组合
-{"type": "combine", "partial_signatures": [...], "messages": [...]}
-
-// 盲签名
-{"type": "blind_sign", "messages": [...], "public_info": [...], "private_info": [...]}
-```
-
-## 📈 性能基准
-
-基准测试包含：
-
-1. **椭圆曲线运算**
-   - G1标量乘法
-   - G2标量乘法  
-   - 双线性配对
-
-2. **密钥生成**
-   - 不同消息长度的setup时间
-
-3. **签名生成**
-   - 完整阈值签名流程
-   - 多轮通信时间
-
-4. **签名验证**
-   - 单签名验证
-   - 批量验证
-
-## 🔒 安全特性
-
-- **抗伪造**: 基于双线性配对的困难问题
-- **阈值安全**: 需要t个诚实参与方
-- **盲签名隐私**: 私有消息对签名方不可见
-- **零知识**: 承诺机制保护中间值
-
-## 📚 文件说明
-
-### 核心算法
-
-- **`bbs/bbs_plus.py`**: BBS+签名的基本实现
-  - `gen()`: 密钥生成
-  - `sign()`: 签名生成
-  - `verify()`: 签名验证
-
-- **`bbs/threshold.py`**: 阈值和盲签名实现
-  - `ThresholdBBSPlus`: 简化阈值签名
-  - `FormalThresholdBBSPlus`: 完整论文协议
-  - `WeakPartiallyBlindSigning`: 盲签名机制
-
-- **`bbs/curve.py`**: 椭圆曲线运算
-  - BLS12-381曲线操作
-  - 点序列化/反序列化
-  - 双线性配对
-
-### 网络组件
-
-- **`test/server.py`**: 阈值签名服务器
-  - 支持多种签名协议
-  - 多线程处理
-  - 确定性setup
-
-- **`test/client.py`**: 测试客户端
-  - 完整测试流程
-  - 多种签名测试
-  - 错误处理
-
-## 🛠️ 开发说明
-
-### 添加新功能
-
-1. 在`bbs/`目录添加新算法
-2. 在`test/`目录添加测试
-3. 更新服务器请求处理
-4. 添加客户端调用接口
-
-### 调试建议
-
-- 使用`simple_local_test.py`快速验证算法
-- 检查服务器日志排查网络问题
-- 启用详细输出调试协议流程
-
-## 📖 参考文献
-
-- BBS+ Signatures: [原始论文链接]
-- 阈值签名协议: [协议4.1描述]
-- BLS12-381曲线: [曲线规范]
-
-## 🤝 贡献
-
-欢迎提交Issue和Pull Request来改进项目。
-
-## 📄 许可证
-
-本项目仅供学习和研究使用。
+This project was completed by [
+    Liang zhang,
+    Dengjie Deng,
+    Junwei Tang,
+    Xiaojun Li,
+    Linxi Wang
+].
