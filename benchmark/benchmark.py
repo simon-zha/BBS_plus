@@ -44,7 +44,7 @@ def test_curve_ops():
     
     group = BilinearGroup()
     
-    # Test G1 point multiplication (used a lot in BBS+)
+    # Test G1 point multiplication
     print("Testing G1 scalar multiplication...")
     g1_times = []
     for i in range(iterations):
@@ -54,7 +54,7 @@ def test_curve_ops():
         if i % 3 == 0:  # don't spam too much
             print(f" At {i+1} times: {elapsed:.1f}s")
     
-    # Test G2 point multiplication (for public keys)
+    # Test G2 point multiplication
     print("Testing G2 scalar multiplication...")
     g2_times = []
     for i in range(iterations):
@@ -62,7 +62,7 @@ def test_curve_ops():
         _, elapsed = time_it(group.multiply_g2, group.G2, scalar)
         g2_times.append(elapsed)
     
-    # Test pairing operations (the expensive part)
+    # Test pairing operations
     print("Test bilinear pairings...")
     pairing_times = []
     for i in range(iterations):
@@ -150,7 +150,7 @@ def test_threshold_signing():
         
         show_avg(f"Threshold signing ({msg_len} msgs)", signing_times)
 
-# Test signature verification, with single signatureand batch signatures
+# Test signature verification, with single signature
 def test_verification():
     print("=== Signature Verification ===")
     
