@@ -48,8 +48,8 @@ new_bbs_plus/
 1.  **Clone the repository:**
 
 ```bash
-    git clone <repository_url>
-    cd new_bbs_plus
+    git clone https://github.com/simon-zha/BBS_plus.git
+    cd BBS_plus
 ```
 
 2.  **Install Python dependencies:**
