@@ -1,0 +1,2 @@
+py_ecc==6.0.0
+cryptography==41.0.7
