@@ -55,7 +55,7 @@ new_bbs_plus/
 2.  **Install Python dependencies:**
 
 ```bash
-    pip install py_ecc
+    pip install -r requirements.txt
 ```
 
 ## Usage
